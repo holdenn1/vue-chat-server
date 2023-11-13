@@ -3,43 +3,41 @@ import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { User } from 'src/user/entities/user.entity';
 import { UserService } from 'src/user/user.service';
 import { mapToUserProfile } from 'src/user/mappers';
-import { UserRequest } from './types';
-
+import { UserDataFromGoogle, UserRequest } from './types';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import * as argon2 from 'argon2';
-
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
     private refreshTokenService: RefreshTokenService,
-    private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
 
-  async registration(dto: CreateUserDto, userPhoto: Express.Multer.File): Promise<any> {
-    const userExists = await this.userService.findUserByEmail(dto.email);
-
-    if (userExists) {
-      throw new BadRequestException('User already exists');
+  async googleAuth(userDataFromGoogle: UserDataFromGoogle, res) {
+    if (!userDataFromGoogle) {
+      throw new BadRequestException('No user from google');
     }
-    const hash = await argon2.hash(dto.password);
 
-    const avatar = await this.userService.uploadAvatar(userPhoto);
+    const user = await this.userService.findUserByEmail(userDataFromGoogle.email);
 
-    const userWithPhotoAndHashPassword = {
-      ...dto,
-      password: hash,
-      photo: avatar,
+    const createGoogleUser: CreateUserDto = {
+      email: userDataFromGoogle.email,
+      nickname: userDataFromGoogle.nickname,
+      photo: userDataFromGoogle.photo ?? null,  
     };
-    const newUser = await this.userService.create(userWithPhotoAndHashPassword);
 
-    const tokens = await this.generateTokens(newUser);
+    const userData = user ? user : await this.userService.create(createGoogleUser);
 
-    return { ...tokens, user: mapToUserProfile(newUser) };
+    const tokens = await this.generateTokens(userData);
+
+    res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
+    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
+  }
+
+  logout(userId: number) {
+    return this.refreshTokenService.removeToken(userId);
   }
 
   refreshTokens(user: UserRequest) {

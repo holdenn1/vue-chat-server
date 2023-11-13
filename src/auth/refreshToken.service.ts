@@ -86,7 +86,7 @@ export class RefreshTokenService {
     });
   }
 
-  async update(tokenId: number, refreshToken: string) {
+  async updateToken(tokenId: number, refreshToken: string) {
     return await this.refreshTokenRepository.update(tokenId, { refreshToken });
   }
 
@@ -104,7 +104,7 @@ export class RefreshTokenService {
     }
     
     const tokens = await this.getTokens(user.sub, user.email);
-    await this.update(token.id, tokens.refreshToken);
+    await this.updateToken(token.id, tokens.refreshToken);
     return tokens;
   }
 }
