@@ -17,23 +17,29 @@ export class AuthService {
 
   async googleAuth(userDataFromGoogle: UserDataFromGoogle, res) {
     if (!userDataFromGoogle) {
-      throw new BadRequestException('No user from google');
+      throw new BadRequestException('User does not exist');
+   
     }
 
-    const user = await this.userService.findUserByEmail(userDataFromGoogle.email);
+    console.log(userDataFromGoogle);
+    
+    // const user = await this.userService.findUserByEmail(userDataFromGoogle.email);
 
-    const createGoogleUser: CreateUserDto = {
-      email: userDataFromGoogle.email,
-      nickname: userDataFromGoogle.nickname,
-      photo: userDataFromGoogle.photo ?? null,  
-    };
+    // const createGoogleUser: CreateUserDto = {
+    //   email: userDataFromGoogle.email,
+    //   nickname: userDataFromGoogle.nickname,
+    //   //! add user preview photo
+    //   photo: userDataFromGoogle.photo ?? null,  
+    // };
 
-    const userData = user ? user : await this.userService.create(createGoogleUser);
+    // const userData = user ? user : await this.userService.create(createGoogleUser);
 
-    const tokens = await this.generateTokens(userData);
+    // const tokens = await this.generateTokens(userData);
 
-    res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
-    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
+    // res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
+
+    // res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
+    res.redirect(`https://ua.vuejs.org/`);
   }
 
   logout(userId: number) {
