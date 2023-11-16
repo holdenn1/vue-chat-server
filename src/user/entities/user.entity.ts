@@ -16,6 +16,9 @@ export class User {
   @Column({ unique: true })
   email: string;
 
+  @Column({nullable: true})
+  password: string
+
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens: RefreshToken[];
 

@@ -1,8 +1,10 @@
-import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Res, Post, UsePipes, ValidationPipe, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AccessTokenGuard } from './guards/accessToken.guard';
 import { GoogleGuard } from './guards/google.guard';
 import { RefreshTokenGuard } from './guards/refreshToken.guard';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -15,7 +17,22 @@ export class AuthController {
   @Get('google/redirect')
   @UseGuards(GoogleGuard)
   async googleAuthRedirect(@Req() req, @Res() res) {
-    await this.authService.googleAuth(req.user, res);
+    const { user, accessToken, refreshToken } = await this.authService.googleAuth(req.user);
+    return user;
+  }
+
+  @Post('registration')
+  @UsePipes(new ValidationPipe())
+  async registration(@Body() createUserDto: CreateUserDto) {
+    const { user, accessToken, refreshToken } = await this.authService.registration(createUserDto);
+    return user;
+  }
+
+  @Post('login')
+  @UsePipes(new ValidationPipe())
+  async login(@Body() data: LoginUserDto) {
+    const { user, accessToken, refreshToken } = await this.authService.login(data);
+    return user;
   }
 
   @UseGuards(AccessTokenGuard)
@@ -26,13 +43,16 @@ export class AuthController {
 
   @Get('token/refresh')
   @UseGuards(RefreshTokenGuard)
-  refreshTokens(@Req() req) {
-    return this.authService.refreshTokens(req.user);
+  async refreshTokens(@Req() req) {
+    const { accessToken, refreshToken } = await this.authService.refreshTokens(req.user);
   }
 
   @Get('token/refresh/refresh-login')
   @UseGuards(RefreshTokenGuard)
-  refreshTokensLogin(@Req() req) {
-    return this.authService.refreshTokensLogin(req.user);
+  async refreshTokensLogin(@Req() req) {
+    const {
+      user,
+      tokens: { accessToken, refreshToken },
+    } = await this.authService.refreshTokensLogin(req.user);
   }
 }
