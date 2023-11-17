@@ -2,7 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { UserRequest } from './types';
 import { CreateTokenDto } from './dto/create-token.dto';
 import { RefreshToken } from './entities/refresh-token.entity';
@@ -70,8 +70,11 @@ export class RefreshTokenService {
   }
 
   async removeToken(userId: number) {
+    if (!userId) {
+      throw new BadRequestException('id not provided');
+    }
     const token = await this.findLastUpdateToken(userId);
-    await this.refreshTokenRepository.remove(token);
+    return await this.refreshTokenRepository.remove(token);
   }
 
   async findLastUpdateToken(userId: number) {
@@ -90,19 +93,20 @@ export class RefreshTokenService {
     return await this.refreshTokenRepository.update(tokenId, { refreshToken });
   }
 
-  async refreshTokens(user: UserRequest) {
+  async refreshTokens(user: UserRequest, refreshToken: string) {
     const token = await this.refreshTokenRepository.findOne({
       where: {
-        refreshToken: user.refreshToken,
+        refreshToken,
       },
     });
+    console.log(token);
 
     if (!token) {
       throw new ForbiddenException('Access Denied');
-    } else if (token.refreshToken !== user.refreshToken) {
+    } else if (token.refreshToken !== refreshToken) {
       throw new ForbiddenException('Access Denied');
     }
-    
+
     const tokens = await this.getTokens(user.sub, user.email);
     await this.updateToken(token.id, tokens.refreshToken);
     return tokens;

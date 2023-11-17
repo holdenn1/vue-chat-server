@@ -79,8 +79,8 @@ export class AuthService {
 
     const tokens = await this.generateTokens(userData);
 
-    return {...tokens, user: mapToUserProfile(userData)}
-    
+    return { ...tokens, user: mapToUserProfile(userData) };
+
     //res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
 
     //res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
@@ -88,16 +88,17 @@ export class AuthService {
 
   logout(userId: number) {
     return this.refreshTokenService.removeToken(userId);
+    
   }
 
-  refreshTokens(user: UserRequest) {
-    return this.refreshTokenService.refreshTokens(user);
+  refreshTokens(user: UserRequest, refreshToken: string) {
+    return this.refreshTokenService.refreshTokens(user, refreshToken);
   }
 
-  async refreshTokensLogin(userData: UserRequest) {
+  async refreshTokensLogin(userData: UserRequest, refreshToken: string) {
     try {
       const findUser = await this.userService.findUserById(userData.sub);
-      const tokens = await this.refreshTokens(userData);
+      const tokens = await this.refreshTokens(userData, refreshToken);
       const user = mapToUserProfile(findUser);
       return { user, tokens };
     } catch {

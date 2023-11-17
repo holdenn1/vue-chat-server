@@ -4,7 +4,6 @@ export type JwtPayload = {
 };
 
 export type UserRequest = JwtPayload & {
-  refreshToken?: string;
   [key: string]: any;
 };
 
