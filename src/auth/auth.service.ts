@@ -4,8 +4,7 @@ import { User } from 'src/user/entities/user.entity';
 import { UserService } from 'src/user/user.service';
 import { mapToUserProfile } from 'src/user/mappers';
 import { UserDataFromGoogle, UserRequest } from './types';
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { LoginUserDto } from './dto/login-user.dto';
 
@@ -14,7 +13,6 @@ export class AuthService {
   constructor(
     private userService: UserService,
     private refreshTokenService: RefreshTokenService,
-    private configService: ConfigService,
   ) {}
 
   async registration(dto: CreateUserDto) {
@@ -31,6 +29,7 @@ export class AuthService {
       password: hash,
       photo: '', //! add user avatar from storage
     };
+
     const newUser = await this.userService.create(userWithPhotoAndHashPassword);
 
     const tokens = await this.generateTokens(newUser);
@@ -42,10 +41,6 @@ export class AuthService {
     const findUser = await this.userService.findUserByEmail(dto.email);
 
     if (!findUser) throw new BadRequestException('User does not exist');
-
-    if (!findUser.password) {
-      throw new ForbiddenException('The password is not correct');
-    }
 
     const passwordMatches = await argon2.verify(findUser.password, dto.password);
 
@@ -63,7 +58,6 @@ export class AuthService {
       throw new BadRequestException('User does not exist');
     }
 
-    console.log(userDataFromGoogle);
 
     const user = await this.userService.findUserByEmail(userDataFromGoogle.email);
 
@@ -80,15 +74,10 @@ export class AuthService {
     const tokens = await this.generateTokens(userData);
 
     return { ...tokens, user: mapToUserProfile(userData) };
-
-    //res.cookie('userData', { ...tokens, user: mapToUserProfile(userData) }, { maxAge: 3600000 });
-
-    //res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
   }
 
   logout(userId: number) {
     return this.refreshTokenService.removeToken(userId);
-    
   }
 
   refreshTokens(user: UserRequest, refreshToken: string) {

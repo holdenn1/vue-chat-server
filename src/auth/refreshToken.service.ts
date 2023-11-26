@@ -99,8 +99,8 @@ export class RefreshTokenService {
         refreshToken,
       },
     });
-    console.log(token);
 
+    
     if (!token) {
       throw new ForbiddenException('Access Denied');
     } else if (token.refreshToken !== refreshToken) {

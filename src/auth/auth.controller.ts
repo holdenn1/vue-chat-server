@@ -6,10 +6,29 @@ import { RefreshTokenGuard } from './guards/refreshToken.guard';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private configService: ConfigService,
+  ) {}
+
+  sendCookie(res: Response, accessToken: string, refreshToken: string) {
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      expires: new Date(new Date().getTime() + 15 * 60 * 1000),
+    });
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      expires: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
+    });
+  }
 
   @Get('google')
   @UseGuards(GoogleGuard)
@@ -19,20 +38,9 @@ export class AuthController {
   @UseGuards(GoogleGuard)
   async googleAuthRedirect(@Req() req, @Res({ passthrough: true }) res: Response) {
     const { user, accessToken, refreshToken } = await this.authService.googleAuth(req.user);
-    res.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 15 * 60 * 1000),
-    });
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
-    });
 
-    return user;
+    this.sendCookie(res, accessToken, refreshToken);
+    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
   }
 
   @Post('registration')
@@ -40,19 +48,7 @@ export class AuthController {
   async registration(@Body() createUserDto: CreateUserDto, @Res({ passthrough: true }) res: Response) {
     const { user, accessToken, refreshToken } = await this.authService.registration(createUserDto);
 
-    res.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 15 * 60 * 1000),
-    });
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
-    });
-
+    this.sendCookie(res, accessToken, refreshToken);
     return user;
   }
 
@@ -60,25 +56,15 @@ export class AuthController {
   @UsePipes(new ValidationPipe())
   async login(@Body() data: LoginUserDto, @Res({ passthrough: true }) res: Response) {
     const { user, accessToken, refreshToken } = await this.authService.login(data);
-    res.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 15 * 60 * 1000),
-    });
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
-    });
 
+    this.sendCookie(res, accessToken, refreshToken);
     return user;
   }
 
   @UseGuards(AccessTokenGuard)
   @Get('logout')
   async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
+
     const data = await this.authService.logout(req.user.sub);
 
     res.clearCookie('access_token', {
@@ -103,19 +89,8 @@ export class AuthController {
       req.user,
       req.cookies.refresh_token,
     );
-    res.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 15 * 60 * 1000),
-    });
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
-    });
 
+    this.sendCookie(res, accessToken, refreshToken);
     return { accessToken, refreshToken };
   }
 
@@ -126,19 +101,9 @@ export class AuthController {
       user,
       tokens: { accessToken, refreshToken },
     } = await this.authService.refreshTokensLogin(req.user, req.cookies.refresh_token);
-    res.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 15 * 60 * 1000),
-    });
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      expires: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
-    });
 
+    this.sendCookie(res, accessToken, refreshToken);
     return user;
   }
+
 }

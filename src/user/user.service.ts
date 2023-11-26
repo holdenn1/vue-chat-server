@@ -3,9 +3,10 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
+import { ILike, Not, Repository } from 'typeorm';
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { storage } from 'src/firebase';
+import { mapToUserProfile, mapToUsersProfile } from './mappers';
 
 @Injectable()
 export class UserService {
@@ -30,6 +31,14 @@ export class UserService {
       throw new BadRequestException(`User by ${id} not found`);
     }
     return await this.userRepository.findOne({ where: { id } });
+  }
+
+  async searchUsersByNickname(nickname: string, userId: number) {
+    const users = await this.userRepository.find({
+      where: { nickname: ILike(`%${nickname}%`), id: Not(userId) },
+      take: 5,
+    });
+    return mapToUsersProfile(users);
   }
 
   async uploadAvatar(cover: Express.Multer.File) {

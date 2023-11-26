@@ -7,3 +7,12 @@ export const mapToUserProfile = (user: User): UserToProfile => ({
   email: user.email,
   photo: user.photo,
 });
+
+export const mapToUsersProfile = (users: User[]): UserToProfile[] => {
+  return users.map((user) => ({
+    id: user.id,
+    nickname: user.nickname,
+    email: user.email,
+    photo: user.photo,
+  }));
+};

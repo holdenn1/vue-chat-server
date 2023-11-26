@@ -22,8 +22,6 @@ export class RefreshTokenStrategy extends PassportStrategy(Strategy, 'jwt-refres
   }
 
   validate(payload: any) {
-    console.log(payload);
-
     return payload;
   }
 }
