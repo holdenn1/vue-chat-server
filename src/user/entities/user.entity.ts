@@ -1,5 +1,6 @@
 import { RefreshToken } from 'src/auth/entities/refresh-token.entity';
 import { Chat } from 'src/chat/entities/chat.entity';
+import { Message } from 'src/chat/entities/message.entity';
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'app_user' })
@@ -22,7 +23,10 @@ export class User {
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens: RefreshToken[];
 
-  @ManyToMany(() => Chat, (chat) => chat.users)
+  @ManyToMany(() => Chat, (chat) => chat.members)
   @JoinTable()
   chats: Chat[]
+
+  @OneToMany(() => Message, (message) => message.chat)
+  messages: Message[];
 }

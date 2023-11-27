@@ -64,7 +64,6 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @Get('logout')
   async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
-
     const data = await this.authService.logout(req.user.sub);
 
     res.clearCookie('access_token', {
@@ -105,5 +104,4 @@ export class AuthController {
     this.sendCookie(res, accessToken, refreshToken);
     return user;
   }
-
 }
