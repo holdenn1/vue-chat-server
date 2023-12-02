@@ -1,7 +1,7 @@
 import { User } from 'src/user/entities/user.entity';
 import { Chat } from './chat.entity';
-import { Column, CreateDateColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
-
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+@Entity()
 export class Message {
   @PrimaryGeneratedColumn()
   id: number;
