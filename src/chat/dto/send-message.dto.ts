@@ -1,5 +1,8 @@
-export class SendMessageDto {
+import { IsNumber, IsString } from 'class-validator';
 
-  recipientId: number
-  message:string
+export class SendMessageDto {
+  @IsNumber()
+  recipientId: number;
+  @IsString()
+  message: string;
 }

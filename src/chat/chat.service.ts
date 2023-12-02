@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UserService } from 'src/user/user.service';
 import { User } from 'src/user/entities/user.entity';
@@ -6,6 +6,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Chat } from './entities/chat.entity';
 import { Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
+import { mapMessageToProfile } from './mappers';
+import { UpdateMessageDto } from './dto/update-message.dto';
 
 @Injectable()
 export class ChatService {
@@ -16,27 +18,6 @@ export class ChatService {
     @InjectRepository(Message)
     private messageRepository: Repository<Message>,
   ) {}
-
-  async findChatById(chatId: number) {
-    return await this.chatRepository.findOne({ where: { id: chatId } });
-  }
-
-  async sendMessage(senderId: number,{recipientId, message }: SendMessageDto) {
-    try {
-      const sender = new User();
-      sender.id = senderId;
-
-      const receiver = new User();
-      receiver.id = recipientId;
-
-      const chat = await this.findOrCreateChat(sender, receiver);
-
-      return await this.messageRepository.save({ message, chat, sender });
-    } catch (e) {
-      console.error(e);
-      throw new BadRequestException(`Message not sent, check the data`);
-    }
-  }
 
   private async findOrCreateChat(sender: User, recipient: User): Promise<Chat> {
     const existingChat = await this.chatRepository
@@ -52,5 +33,41 @@ export class ChatService {
     }
 
     return this.chatRepository.save({ members: [sender, recipient] });
+  }
+
+  async sendMessage(senderId: number, { recipientId, message }: SendMessageDto) {
+    try {
+      const sender = new User();
+      sender.id = senderId;
+
+      const receiver = new User();
+      receiver.id = recipientId;
+
+      const chat = await this.findOrCreateChat(sender, receiver);
+
+      const createdMessage = await this.messageRepository.save({ message, chat, sender });
+      return mapMessageToProfile(createdMessage);
+    } catch (e) {
+      console.error(e);
+      throw new BadRequestException(`Something went wrong, message not sent`);
+    }
+  }
+
+  async updateMessage(senderId: number, dto: UpdateMessageDto) {
+    const finedMessage = await this.messageRepository.findOne({
+      relations: { sender: true, chat: true },
+      where: { id: dto.id },
+    });
+
+    if (finedMessage.sender.id !== senderId) {
+      throw new ForbiddenException();
+    }
+
+    finedMessage.message = dto.message ?? finedMessage.message;
+    finedMessage.isLike = dto.isLike ?? finedMessage.isLike;
+
+    const updatedMessage = await this.messageRepository.save(finedMessage);
+
+    return mapMessageToProfile(updatedMessage);
   }
 }

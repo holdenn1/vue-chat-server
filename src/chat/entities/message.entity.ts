@@ -9,6 +9,9 @@ export class Message {
   @Column()
   message: string;
 
+  @Column({default: false})
+  isLike: boolean
+
   @ManyToOne(() => Chat, (chat) => chat.messages, { onDelete: 'CASCADE' })
   chat: Chat;
 
