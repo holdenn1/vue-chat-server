@@ -1,4 +1,15 @@
-import { Controller, Post, Body, UseGuards, UsePipes, ValidationPipe, Req, Put } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+  Req,
+  Put,
+  Delete,
+  Param,
+} from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AccessTokenGuard } from 'src/auth/guards/accessToken.guard';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -20,5 +31,17 @@ export class ChatController {
   async updateMessage(@Req() req, @Body() updateMessage: UpdateMessageDto) {
     const updatedMessage = await this.chatService.updateMessage(+req.user.sub, updateMessage);
     return updatedMessage;
+  }
+
+  @Delete('remove-message/:messageId')
+  async removeMessage(@Req() req, @Param('messageId') messageId: string) {
+    const message = await this.chatService.removeMessage(+req.user.sub, +messageId);
+    return message;
+  }
+
+  @Delete('remove-chat/:recipientId')
+  async removeChat(@Req() req, @Param('recipientId') recipientId: string) {
+    const chat = await this.chatService.removeChat(+req.user.sub, +recipientId);
+    return chat;
   }
 }

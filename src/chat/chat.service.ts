@@ -19,14 +19,25 @@ export class ChatService {
     private messageRepository: Repository<Message>,
   ) {}
 
-  private async findOrCreateChat(sender: User, recipient: User): Promise<Chat> {
-    const existingChat = await this.chatRepository
+  async findMessage(messageId) {
+    return await this.messageRepository.findOne({
+      relations: { sender: true, chat: true },
+      where: { id: messageId },
+    });
+  }
+
+  async findChat(sender: User, recipient: User) {
+    return await this.chatRepository
       .createQueryBuilder('chat')
       .leftJoin('chat.members', 'members')
       .where('members.id IN (:...userIds)', { userIds: [sender.id, recipient.id] })
       .groupBy('chat.id')
       .having('COUNT(DISTINCT members.id) = 2')
       .getOne();
+  }
+
+  async findOrCreateChat(sender: User, recipient: User): Promise<Chat> {
+    const existingChat = await this.findChat(sender, recipient);
 
     if (existingChat) {
       return existingChat;
@@ -40,10 +51,10 @@ export class ChatService {
       const sender = new User();
       sender.id = senderId;
 
-      const receiver = new User();
-      receiver.id = recipientId;
+      const recipient = new User();
+      recipient.id = recipientId;
 
-      const chat = await this.findOrCreateChat(sender, receiver);
+      const chat = await this.findOrCreateChat(sender, recipient);
 
       const createdMessage = await this.messageRepository.save({ message, chat, sender });
       return mapMessageToProfile(createdMessage);
@@ -54,10 +65,7 @@ export class ChatService {
   }
 
   async updateMessage(senderId: number, dto: UpdateMessageDto) {
-    const finedMessage = await this.messageRepository.findOne({
-      relations: { sender: true, chat: true },
-      where: { id: dto.id },
-    });
+    const finedMessage = await this.findMessage(dto.id);
 
     if (finedMessage.sender.id !== senderId) {
       throw new ForbiddenException();
@@ -69,5 +77,35 @@ export class ChatService {
     const updatedMessage = await this.messageRepository.save(finedMessage);
 
     return mapMessageToProfile(updatedMessage);
+  }
+
+  async removeMessage(userId: number, messageId: number) {
+    const message = await this.findMessage(messageId);
+
+    if (message.sender.id !== userId) {
+      throw new ForbiddenException();
+    }
+
+    const removedMessage = await this.messageRepository.remove(message);
+
+    return mapMessageToProfile({ ...removedMessage, id: messageId });
+  }
+
+  async removeChat(senderId: number, recipientId: number) {
+    const sender = new User();
+    sender.id = senderId;
+
+    const recipient = new User();
+    recipient.id = recipientId;
+
+    const chat = await this.findChat(sender, recipient);
+    const chatId = chat?.id;
+    
+    if (!chat) {
+      throw new BadRequestException('Chat does not exist');
+    }
+
+    await this.chatRepository.remove(chat);
+    return { chatId };
   }
 }
