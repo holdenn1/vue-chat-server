@@ -40,7 +40,7 @@ export class AuthController {
     const { user, accessToken, refreshToken } = await this.authService.googleAuth(req.user);
 
     this.sendCookie(res, accessToken, refreshToken);
-    res.redirect(`${this.configService.get('CLIENT_URL')}#/`);
+    res.redirect(`${this.configService.get('CLIENT_URL')}/#/`);
   }
 
   @Post('registration')

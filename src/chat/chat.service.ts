@@ -57,7 +57,7 @@ export class ChatService {
       const chat = await this.findOrCreateChat(sender, recipient);
 
       const createdMessage = await this.messageRepository.save({ message, chat, sender });
-      return mapMessageToProfile(createdMessage);
+      return { chat, message: mapMessageToProfile(createdMessage) };
     } catch (e) {
       console.error(e);
       throw new BadRequestException(`Something went wrong, message not sent`);
@@ -100,7 +100,7 @@ export class ChatService {
 
     const chat = await this.findChat(sender, recipient);
     const chatId = chat?.id;
-    
+
     if (!chat) {
       throw new BadRequestException('Chat does not exist');
     }
@@ -108,4 +108,5 @@ export class ChatService {
     await this.chatRepository.remove(chat);
     return { chatId };
   }
+
 }

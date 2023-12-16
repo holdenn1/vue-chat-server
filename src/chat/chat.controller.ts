@@ -9,22 +9,35 @@ import {
   Put,
   Delete,
   Param,
+  Get,
+  Headers,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AccessTokenGuard } from 'src/auth/guards/accessToken.guard';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
+import { SocketGateway } from 'src/socket/socket.gateway';
+import { NotificationType } from 'src/socket/types';
 
 @UseGuards(AccessTokenGuard)
 @UsePipes(new ValidationPipe())
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly socketGateway: SocketGateway,
+  ) {}
 
   @Post('send-message')
-  async sendMessage(@Req() req, @Body() sendMessageDto: SendMessageDto) {
-    const message = await this.chatService.sendMessage(+req.user.sub, sendMessageDto);
-    return message;
+  async sendMessage(
+    @Req() req,
+    @Body() sendMessageDto: SendMessageDto,
+
+    @Headers('socketId') socketId: string,
+  ) {
+    const data = await this.chatService.sendMessage(+req.user.sub, sendMessageDto);
+    this.socketGateway.emitToAll(NotificationType.SEND_MESSAGE, { payload: 'Hello!', socketId });
+    return data;
   }
 
   @Put('update-message')

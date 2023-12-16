@@ -8,6 +8,9 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { LoginUserDto } from './dto/login-user.dto';
 
+const USER_AVATAR =
+  'https://firebasestorage.googleapis.com/v0/b/wallet-de88d.appspot.com/o/images%2Ficons8-user-48.png?alt=media&token=19934618-f524-42cd-b31d-d07b3de0277d';
+  ``
 @Injectable()
 export class AuthService {
   constructor(
@@ -27,7 +30,7 @@ export class AuthService {
     const userWithPhotoAndHashPassword = {
       ...dto,
       password: hash,
-      photo: '', //! add user avatar from storage
+      photo: USER_AVATAR, //! add user avatar from storage
     };
 
     const newUser = await this.userService.create(userWithPhotoAndHashPassword);
@@ -58,7 +61,6 @@ export class AuthService {
       throw new BadRequestException('User does not exist');
     }
 
-
     const user = await this.userService.findUserByEmail(userDataFromGoogle.email);
 
     const createGoogleUser: CreateUserDto = {
@@ -66,7 +68,7 @@ export class AuthService {
       nickname: userDataFromGoogle.nickname,
       //! add user preview photo
       password: null,
-      photo: userDataFromGoogle.photo ?? '',
+      photo: userDataFromGoogle.photo ?? USER_AVATAR,
     };
 
     const userData = user ? user : await this.userService.create(createGoogleUser);
