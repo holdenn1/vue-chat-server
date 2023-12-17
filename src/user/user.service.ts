@@ -32,6 +32,10 @@ export class UserService {
     return await this.userRepository.findOne({ where: { id } });
   }
 
+  async getUserChats(userId) {
+    return await this.userRepository.findOne({ relations: { chats: true }, where: { id: userId } });
+  }
+
   async searchUsersByNickname(nickname: string, userId: number) {
     const users = await this.userRepository.find({
       where: { nickname: ILike(`%${nickname}%`), id: Not(userId) },

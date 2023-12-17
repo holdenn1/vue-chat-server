@@ -36,7 +36,7 @@ export class ChatController {
     @Headers('socketId') socketId: string,
   ) {
     const data = await this.chatService.sendMessage(+req.user.sub, sendMessageDto);
-    this.socketGateway.emitToAll(NotificationType.SEND_MESSAGE, { payload: 'Hello!', socketId });
+    this.socketGateway.emitToAll(NotificationType.SEND_MESSAGE, { payload: data, socketId });
     return data;
   }
 
@@ -56,5 +56,15 @@ export class ChatController {
   async removeChat(@Req() req, @Param('recipientId') recipientId: string) {
     const chat = await this.chatService.removeChat(+req.user.sub, +recipientId);
     return chat;
+  }
+
+  @Get('get-chats')
+  async getUserChats(@Req() req) {
+    return this.chatService.findChatsByUser(+req.user.sub);
+  }
+
+  @Get('get-messages/:chatId')
+  async getMessages(@Req() req, @Param('chatId') chatId: string) {
+    return this.chatService.getMessages(+req.user.sub, +chatId);
   }
 }

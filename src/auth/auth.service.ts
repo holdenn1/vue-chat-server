@@ -91,6 +91,7 @@ export class AuthService {
       const findUser = await this.userService.findUserById(userData.sub);
       const tokens = await this.refreshTokens(userData, refreshToken);
       const user = mapToUserProfile(findUser);
+      
       return { user, tokens };
     } catch {
       throw new BadRequestException('An error occurred');

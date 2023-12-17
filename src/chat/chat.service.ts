@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Chat } from './entities/chat.entity';
 import { Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
-import { mapMessageToProfile } from './mappers';
+import { mapChatToProfile, mapChatsToProfile, mapMessageToProfile, mapMessagesToProfile } from './mappers';
 import { UpdateMessageDto } from './dto/update-message.dto';
 
 @Injectable()
@@ -57,7 +57,7 @@ export class ChatService {
       const chat = await this.findOrCreateChat(sender, recipient);
 
       const createdMessage = await this.messageRepository.save({ message, chat, sender });
-      return { chat, message: mapMessageToProfile(createdMessage) };
+      return { chat: mapChatToProfile(chat), message: mapMessageToProfile(createdMessage) };
     } catch (e) {
       console.error(e);
       throw new BadRequestException(`Something went wrong, message not sent`);
@@ -109,4 +109,34 @@ export class ChatService {
     return { chatId };
   }
 
+  async findChatsByUser(userId: number) {
+    const chats = await this.chatRepository
+      .createQueryBuilder('chat')
+      .innerJoinAndSelect('chat.members', 'user')
+      .leftJoinAndSelect('chat.members', 'allMembers')
+      .orderBy('chat.updatedDate', 'DESC')
+      .where('user.id = :userId', { userId })
+      .andWhere('allMembers.id != :userId', { userId })
+      .getMany();
+
+    return mapChatsToProfile(chats);
+  }
+
+  async getMessages(userId: number, chatId: number) {
+    const user = await this.userService.getUserChats(userId);
+
+    const isMember = user.chats.some((chat) => chat.id === chatId);
+
+    if (!isMember) {
+      throw new ForbiddenException();
+    }
+
+    const messages = await this.messageRepository.find({
+      relations: { sender: true, chat: true },
+      where: { chat: { id: chatId } },
+      order: {createdDate: 'DESC'}
+    });
+
+    return mapMessagesToProfile(messages);
+  }
 }
