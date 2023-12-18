@@ -5,7 +5,8 @@ import { User } from './entities/user.entity';
 import { ILike, Not, Repository } from 'typeorm';
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { storage } from 'src/firebase';
-import { mapToUsersProfile } from './mappers';
+import { mapToUserProfile, mapToUsersProfile } from './mappers';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -54,5 +55,32 @@ export class UserService {
     });
 
     return await getDownloadURL(uploadBook.snapshot.ref);
+  }
+
+  async updateUserAvatar(cover: Express.Multer.File, userId: number) {
+    if (!userId) {
+      throw new BadRequestException('Key not found');
+    }
+
+    const avatar = await this.uploadAvatar(cover);
+
+    const user = await this.updateUser(userId, { photo: avatar });
+
+    return user;
+  }
+
+  async updateUser(id: number, dto: Partial<UpdateUserDto>) {
+    const user = await this.findUserById(id);
+
+    if (!user) {
+      throw new BadRequestException('User does not exist');
+    }
+
+    user.nickname = dto.nickname ?? user.nickname;
+    user.photo = dto.photo ?? user.photo;
+    
+    const updatedUser = await this.userRepository.save(user);
+
+    return mapToUserProfile(updatedUser);
   }
 }

@@ -5,12 +5,24 @@ import { UserService } from 'src/user/user.service';
 import { mapToUserProfile } from 'src/user/mappers';
 import { UserDataFromGoogle, UserRequest } from './types';
 import { BadRequestException, Injectable } from '@nestjs/common';
-import * as argon2 from 'argon2';
 import { LoginUserDto } from './dto/login-user.dto';
+
+import * as argon2 from 'argon2';
+const crypto = require('crypto');
 
 const USER_AVATAR =
   'https://firebasestorage.googleapis.com/v0/b/wallet-de88d.appspot.com/o/images%2Ficons8-user-48.png?alt=media&token=19934618-f524-42cd-b31d-d07b3de0277d';
-  ``
+``;
+
+function generateUniqueNumber() {
+  const current_date = new Date().valueOf().toString();
+  const random = Math.random().toString();
+  const hash = crypto
+    .createHash('sha256')
+    .update(current_date + random)
+    .digest('hex');
+  return parseInt(hash.substring(0, 7), 16);
+}
 @Injectable()
 export class AuthService {
   constructor(
@@ -65,7 +77,7 @@ export class AuthService {
 
     const createGoogleUser: CreateUserDto = {
       email: userDataFromGoogle.email,
-      nickname: userDataFromGoogle.nickname,
+      nickname: `${userDataFromGoogle.nickname}${generateUniqueNumber()}`,
       //! add user preview photo
       password: null,
       photo: userDataFromGoogle.photo ?? USER_AVATAR,
@@ -91,7 +103,7 @@ export class AuthService {
       const findUser = await this.userService.findUserById(userData.sub);
       const tokens = await this.refreshTokens(userData, refreshToken);
       const user = mapToUserProfile(findUser);
-      
+
       return { user, tokens };
     } catch {
       throw new BadRequestException('An error occurred');
