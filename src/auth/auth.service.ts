@@ -31,25 +31,35 @@ export class AuthService {
   ) {}
 
   async registration(dto: CreateUserDto) {
-    const userExists = await this.userService.findUserByEmail(dto.email);
+    try {
+      await this.userService.findUserByEmail(dto.email);
 
-    if (userExists) {
-      throw new BadRequestException('User already exists');
+      const hash = await argon2.hash(dto.password);
+
+      const userWithPhotoAndHashPassword = {
+        ...dto,
+        password: hash,
+        photo: USER_AVATAR,
+      };
+
+      const newUser = await this.userService.create(userWithPhotoAndHashPassword);
+
+      const tokens = await this.generateTokens(newUser);
+
+      return { ...tokens, user: mapToUserProfile(newUser) };
+    } catch (error) {
+      switch (true) {
+        case error.detail.includes('nickname'): {
+          throw new BadRequestException('nickname is already in use');
+        }
+        case error.detail.includes('email'): {
+          throw new BadRequestException('User already exists');
+        }
+        default: {
+          throw new BadRequestException('Something went wrong');
+        }
+      }
     }
-
-    const hash = await argon2.hash(dto.password);
-
-    const userWithPhotoAndHashPassword = {
-      ...dto,
-      password: hash,
-      photo: USER_AVATAR, //! add user avatar from storage
-    };
-
-    const newUser = await this.userService.create(userWithPhotoAndHashPassword);
-
-    const tokens = await this.generateTokens(newUser);
-
-    return { ...tokens, user: mapToUserProfile(newUser) };
   }
 
   async login(dto: LoginUserDto) {

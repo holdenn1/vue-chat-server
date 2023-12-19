@@ -11,6 +11,7 @@ import {
   Param,
   Get,
   Headers,
+  Query,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AccessTokenGuard } from 'src/auth/guards/accessToken.guard';
@@ -59,12 +60,17 @@ export class ChatController {
   }
 
   @Get('get-chats')
-  async getUserChats(@Req() req) {
-    return this.chatService.findChatsByUser(+req.user.sub);
+  async getUserChats(@Req() req, @Query('page') page: string, @Query('pageSize') pageSize: string) {
+    return this.chatService.findChatsByUser(+req.user.sub, +page, +pageSize);
   }
 
   @Get('get-messages/:chatId')
-  async getMessages(@Req() req, @Param('chatId') chatId: string) {
-    return this.chatService.getMessages(+req.user.sub, +chatId);
+  async getMessages(
+    @Req() req,
+    @Param('chatId') chatId: string,
+    @Query('page') page: string,
+    @Query('pageSize') pageSize: string,
+  ) {
+    return this.chatService.getMessages(+req.user.sub, +chatId, +page, +pageSize);
   }
 }

@@ -109,7 +109,13 @@ export class ChatService {
     return { chatId };
   }
 
-  async findChatsByUser(userId: number) {
+  async findChatsByUser(userId: number, page: number, pageSize: number) {
+    const skip = (page - 1) * pageSize;
+
+    if (page <= 0 || pageSize <= 0) {
+      throw new BadRequestException('Invalid page or pageSize value');
+    }
+
     const chats = await this.chatRepository
       .createQueryBuilder('chat')
       .innerJoinAndSelect('chat.members', 'user')
@@ -117,12 +123,20 @@ export class ChatService {
       .orderBy('chat.updatedDate', 'DESC')
       .where('user.id = :userId', { userId })
       .andWhere('allMembers.id != :userId', { userId })
+      .skip(skip)
+      .take(pageSize)
       .getMany();
 
     return mapChatsToProfile(chats);
   }
 
-  async getMessages(userId: number, chatId: number) {
+  async getMessages(userId: number, chatId: number, page: number, pageSize: number) {
+    const skip = (page - 1) * pageSize;
+
+    if (page <= 0 || pageSize <= 0) {
+      throw new BadRequestException('Invalid page or pageSize value');
+    }
+
     const user = await this.userService.getUserChats(userId);
 
     const isMember = user.chats.some((chat) => chat.id === chatId);
@@ -134,7 +148,9 @@ export class ChatService {
     const messages = await this.messageRepository.find({
       relations: { sender: true, chat: true },
       where: { chat: { id: chatId } },
-      order: {createdDate: 'DESC'}
+      order: { createdDate: 'DESC' },
+      take: pageSize,
+      skip,
     });
 
     return mapMessagesToProfile(messages);

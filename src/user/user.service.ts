@@ -26,6 +26,13 @@ export class UserService {
     return await this.userRepository.findOne({ where: { email } });
   }
 
+  async findUserByNickname(nickname: string) {
+    if (!nickname) {
+      throw new BadRequestException(`User by ${nickname} not found`);
+    }
+    return await this.userRepository.findOne({ where: { nickname } });
+  }
+
   async findUserById(id: number) {
     if (!id) {
       throw new BadRequestException(`User by ${id} not found`);
@@ -78,7 +85,7 @@ export class UserService {
 
     user.nickname = dto.nickname ?? user.nickname;
     user.photo = dto.photo ?? user.photo;
-    
+
     const updatedUser = await this.userRepository.save(user);
 
     return mapToUserProfile(updatedUser);
