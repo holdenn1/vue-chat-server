@@ -25,7 +25,7 @@ export const mapChatToProfile = (chat: Chat): ChatToProfile => ({
   members: chat.members,
 });
 
-export const mapMessagesToProfile = (messages: Message[]):MessageToProfile[] => {
+export const mapMessagesToProfile = (messages: Message[]): MessageToProfile[] => {
   return messages.map((message) => ({
     id: message.id,
     message: message.message,

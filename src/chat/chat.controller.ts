@@ -33,11 +33,14 @@ export class ChatController {
   async sendMessage(
     @Req() req,
     @Body() sendMessageDto: SendMessageDto,
-
     @Headers('socketId') socketId: string,
   ) {
     const data = await this.chatService.sendMessage(+req.user.sub, sendMessageDto);
-    this.socketGateway.emitToAll(NotificationType.SEND_MESSAGE, { payload: data, socketId });
+
+    this.socketGateway.emitNotification(data.recipientId, NotificationType.SEND_MESSAGE, {
+      payload: data,
+      socketId,
+    });
     return data;
   }
 
@@ -50,13 +53,23 @@ export class ChatController {
   @Delete('remove-message/:messageId')
   async removeMessage(@Req() req, @Param('messageId') messageId: string) {
     const message = await this.chatService.removeMessage(+req.user.sub, +messageId);
+
     return message;
   }
 
   @Delete('remove-chat/:recipientId')
-  async removeChat(@Req() req, @Param('recipientId') recipientId: string) {
-    const chat = await this.chatService.removeChat(+req.user.sub, +recipientId);
-    return chat;
+  async removeChat(
+    @Req() req,
+    @Headers('socketId') socketId: string,
+    @Param('recipientId') recipientId: string,
+  ) {
+    const data = await this.chatService.removeChat(+req.user.sub, +recipientId);
+
+    this.socketGateway.emitNotification(+recipientId, NotificationType.REMOVE_CHAT, {
+      payload: data,
+      socketId,
+    });
+    return data;
   }
 
   @Get('get-chats')

@@ -40,7 +40,8 @@ export class ChatService {
     const existingChat = await this.findChat(sender, recipient);
 
     if (existingChat) {
-      return existingChat;
+      existingChat.updatedDate = new Date();
+      return await this.chatRepository.save(existingChat);
     }
 
     return this.chatRepository.save({ members: [sender, recipient] });
@@ -57,7 +58,7 @@ export class ChatService {
       const chat = await this.findOrCreateChat(sender, recipient);
 
       const createdMessage = await this.messageRepository.save({ message, chat, sender });
-      return { chat: mapChatToProfile(chat), message: mapMessageToProfile(createdMessage) };
+      return { chat: mapChatToProfile(chat), message: mapMessageToProfile(createdMessage) ,recipientId};
     } catch (e) {
       console.error(e);
       throw new BadRequestException(`Something went wrong, message not sent`);
