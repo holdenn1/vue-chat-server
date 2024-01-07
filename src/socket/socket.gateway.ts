@@ -41,6 +41,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return this.server.to(String(userId)).emit(type, notification);
   }
 
+  public emitToAll(type: NotificationType, notification) {
+    return this.server.emit(type, notification);
+  }
+
   async handleConnection(client: Socket) {
     try {
       const user = await this.authSocket(client);

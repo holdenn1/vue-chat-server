@@ -20,6 +20,7 @@ import { SocketModule } from './socket/socket.module';
         username: configService.get('DB_USERNAME'),
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
+        timezone: "Europe/Kiev",
         autoLoadEntities: true,
         synchronize: true,
       }),

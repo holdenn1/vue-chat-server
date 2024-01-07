@@ -28,4 +28,6 @@ export type ChatsToProfile = {
 export type ChatToProfile = {
   id: number;
   members: { id: number }[];
+  createdDate: Date;
+  updatedDate: Date;
 };

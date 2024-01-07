@@ -45,15 +45,32 @@ export class ChatController {
   }
 
   @Put('update-message')
-  async updateMessage(@Req() req, @Body() updateMessage: UpdateMessageDto) {
+  async updateMessage(
+    @Req() req,
+    @Headers('socketId') socketId: string,
+    @Body() updateMessage: UpdateMessageDto,
+  ) {
     const updatedMessage = await this.chatService.updateMessage(+req.user.sub, updateMessage);
+
+    this.socketGateway.emitNotification(updateMessage.recipientId, NotificationType.UPDATE_MESSAGE, {
+      payload: updatedMessage,
+      socketId,
+    });
     return updatedMessage;
   }
 
-  @Delete('remove-message/:messageId')
-  async removeMessage(@Req() req, @Param('messageId') messageId: string) {
+  @Delete('remove-message/:messageId/:recipientId')
+  async removeMessage(
+    @Req() req,
+    @Headers('socketId') socketId: string,
+    @Param('messageId') messageId: string,
+    @Param('recipientId') recipientId: string,
+  ) {
     const message = await this.chatService.removeMessage(+req.user.sub, +messageId);
-
+    this.socketGateway.emitNotification(+recipientId, NotificationType.REMOVE_MESSAGE, {
+      payload: message,
+      socketId,
+    });
     return message;
   }
 

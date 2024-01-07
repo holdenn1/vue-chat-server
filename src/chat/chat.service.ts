@@ -37,14 +37,21 @@ export class ChatService {
   }
 
   async findOrCreateChat(sender: User, recipient: User): Promise<Chat> {
-    const existingChat = await this.findChat(sender, recipient);
+    try {
+      const existingChat = await this.findChat(sender, recipient);
 
-    if (existingChat) {
-      existingChat.updatedDate = new Date();
-      return await this.chatRepository.save(existingChat);
+      if (existingChat) {
+        existingChat.updatedDate = new Date();
+        return await this.chatRepository.save(existingChat);
+      }
+
+      const getFullRecipient = await this.userService.findUserById(recipient.id);
+      const getFullSender = await this.userService.findUserById(sender.id);
+
+      return this.chatRepository.save({ members: [getFullSender, getFullRecipient] });
+    } catch (e) {
+      console.error(e);
     }
-
-    return this.chatRepository.save({ members: [sender, recipient] });
   }
 
   async sendMessage(senderId: number, { recipientId, message }: SendMessageDto) {
@@ -58,7 +65,7 @@ export class ChatService {
       const chat = await this.findOrCreateChat(sender, recipient);
 
       const createdMessage = await this.messageRepository.save({ message, chat, sender });
-      return { chat: mapChatToProfile(chat), message: mapMessageToProfile(createdMessage) ,recipientId};
+      return { chat: mapChatToProfile(chat), message: mapMessageToProfile(createdMessage), recipientId };
     } catch (e) {
       console.error(e);
       throw new BadRequestException(`Something went wrong, message not sent`);
@@ -69,11 +76,12 @@ export class ChatService {
     const finedMessage = await this.findMessage(dto.id);
 
     if (finedMessage.sender.id !== senderId) {
-      throw new ForbiddenException();
+      finedMessage.isLike = dto.isLike ?? finedMessage.isLike;
     }
 
-    finedMessage.message = dto.message ?? finedMessage.message;
-    finedMessage.isLike = dto.isLike ?? finedMessage.isLike;
+    if (finedMessage.sender.id === senderId) {
+      finedMessage.message = dto.message ?? finedMessage.message;
+    }
 
     const updatedMessage = await this.messageRepository.save(finedMessage);
 

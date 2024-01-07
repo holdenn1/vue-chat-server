@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   Post,
   Put,
@@ -16,11 +17,16 @@ import { RefreshTokenGuard } from 'src/auth/guards/refreshToken.guard';
 import { AccessTokenGuard } from 'src/auth/guards/accessToken.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { SocketGateway } from 'src/socket/socket.gateway';
+import { NotificationType } from 'src/socket/types';
 
 @UseGuards(AccessTokenGuard)
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly socketGateway: SocketGateway,
+  ) {}
 
   @Get('search-users')
   searchUsersByNickname(@Query('nickname') nickname: string, @Req() req) {
@@ -39,7 +45,18 @@ export class UserController {
   }
 
   @Put('update-user')
-  updateUser(@Req() req, @Body() updateUserDto: Partial<UpdateUserDto>) {
-    return this.userService.updateUser(+req.user.sub, updateUserDto);
+  async updateUser(
+    @Req() req,
+    @Headers('socketId') socketId: string,
+    @Body() updateUserDto: Partial<UpdateUserDto>,
+  ) {
+    const data = await this.userService.updateUser(+req.user.sub, updateUserDto);
+
+    this.socketGateway.emitToAll(NotificationType.UPDATE_USER, {
+      payload: data,
+      socketId,
+    });
+
+    return data;
   }
 }

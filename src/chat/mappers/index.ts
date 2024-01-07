@@ -23,6 +23,8 @@ export const mapChatsToProfile = (chats: Chat[]): ChatsToProfile[] => {
 export const mapChatToProfile = (chat: Chat): ChatToProfile => ({
   id: chat.id,
   members: chat.members,
+  createdDate: chat.createdDate,
+  updatedDate: chat.updatedDate,
 });
 
 export const mapMessagesToProfile = (messages: Message[]): MessageToProfile[] => {

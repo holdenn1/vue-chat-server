@@ -9,4 +9,6 @@ export class UpdateMessageDto {
   @IsBoolean()
   @IsOptional()
   isLike:boolean
+  @IsNumber()
+  recipientId: number
 }
