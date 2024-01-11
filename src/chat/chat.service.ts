@@ -26,7 +26,7 @@ export class ChatService {
     });
   }
 
-  async findChat(sender: User, recipient: User) {
+  async findByMembersChat(sender: User, recipient: User) {
     return await this.chatRepository
       .createQueryBuilder('chat')
       .leftJoin('chat.members', 'members')
@@ -36,19 +36,35 @@ export class ChatService {
       .getOne();
   }
 
+  async findChatById(chatId: number) {
+    const chat = await this.chatRepository.findOne({ where: { id: chatId } });
+    if (chat) {
+      throw new BadRequestException('Chat does not exist');
+    }
+    return chat;
+  }
+
   async findOrCreateChat(sender: User, recipient: User): Promise<Chat> {
     try {
-      const existingChat = await this.findChat(sender, recipient);
+      const existingChat = await this.findByMembersChat(sender, recipient);
 
       if (existingChat) {
         existingChat.updatedDate = new Date();
+
         return await this.chatRepository.save(existingChat);
       }
 
       const getFullRecipient = await this.userService.findUserById(recipient.id);
       const getFullSender = await this.userService.findUserById(sender.id);
 
-      return this.chatRepository.save({ members: [getFullSender, getFullRecipient] });
+      if (!getFullRecipient) {
+        throw new BadRequestException('One of member does not exist');
+      }
+
+      return this.chatRepository.save({
+        members: [getFullSender, getFullRecipient],
+        lastReadMessageDate: new Date(),
+      });
     } catch (e) {
       console.error(e);
     }
@@ -65,7 +81,12 @@ export class ChatService {
       const chat = await this.findOrCreateChat(sender, recipient);
 
       const createdMessage = await this.messageRepository.save({ message, chat, sender });
-      return { chat: mapChatToProfile(chat), message: mapMessageToProfile(createdMessage), recipientId };
+
+      return {
+        chat: mapChatToProfile(chat, senderId),
+        message: mapMessageToProfile(createdMessage),
+        recipientId,
+      };
     } catch (e) {
       console.error(e);
       throw new BadRequestException(`Something went wrong, message not sent`);
@@ -74,6 +95,10 @@ export class ChatService {
 
   async updateMessage(senderId: number, dto: UpdateMessageDto) {
     const finedMessage = await this.findMessage(dto.id);
+
+    if (!finedMessage) {
+      throw new BadRequestException('Message not found');
+    }
 
     if (finedMessage.sender.id !== senderId) {
       finedMessage.isLike = dto.isLike ?? finedMessage.isLike;
@@ -91,6 +116,10 @@ export class ChatService {
   async removeMessage(userId: number, messageId: number) {
     const message = await this.findMessage(messageId);
 
+    if (!message) {
+      throw new BadRequestException('Message does not exist');
+    }
+
     if (message.sender.id !== userId) {
       throw new ForbiddenException();
     }
@@ -100,22 +129,15 @@ export class ChatService {
     return mapMessageToProfile({ ...removedMessage, id: messageId });
   }
 
-  async removeChat(senderId: number, recipientId: number) {
-    const sender = new User();
-    sender.id = senderId;
-
-    const recipient = new User();
-    recipient.id = recipientId;
-
-    const chat = await this.findChat(sender, recipient);
-    const chatId = chat?.id;
+  async removeChat(userId: number, chatId: number) {
+    const chat = await this.chatRepository.findOne({ relations: { members: true }, where: { id: chatId } });
 
     if (!chat) {
       throw new BadRequestException('Chat does not exist');
     }
 
     await this.chatRepository.remove(chat);
-    return { chatId };
+    return mapChatToProfile({ ...chat, id: chatId }, userId);
   }
 
   async findChatsByUser(userId: number, page: number, pageSize: number) {
@@ -128,18 +150,30 @@ export class ChatService {
     const chats = await this.chatRepository
       .createQueryBuilder('chat')
       .innerJoinAndSelect('chat.members', 'user')
-      .leftJoinAndSelect('chat.members', 'allMembers')
+      .innerJoinAndSelect('chat.messages', 'message')
+      .where((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('MAX(subMessage.id)')
+          .from(Message, 'subMessage')
+          .where('subMessage.chat = chat.id')
+          .getQuery();
+        return `message.id = (${subQuery})`;
+      })
       .orderBy('chat.updatedDate', 'DESC')
-      .where('user.id = :userId', { userId })
-      .andWhere('allMembers.id != :userId', { userId })
       .skip(skip)
       .take(pageSize)
       .getMany();
 
-    return mapChatsToProfile(chats);
+    return mapChatsToProfile(chats, userId);
   }
 
   async getMessages(userId: number, chatId: number, page: number, pageSize: number) {
+    if (page === 1) {
+      const chat = await this.findChatById(chatId);
+      chat.lastReadMessageDate = new Date();
+      await this.chatRepository.save(chat);
+    }
     const skip = (page - 1) * pageSize;
 
     if (page <= 0 || pageSize <= 0) {

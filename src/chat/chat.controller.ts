@@ -19,6 +19,7 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { SocketGateway } from 'src/socket/socket.gateway';
 import { NotificationType } from 'src/socket/types';
+import { MessageToProfile, SendMessageResponse } from './types';
 
 @UseGuards(AccessTokenGuard)
 @UsePipes(new ValidationPipe())
@@ -35,7 +36,7 @@ export class ChatController {
     @Body() sendMessageDto: SendMessageDto,
     @Headers('socketId') socketId: string,
   ) {
-    const data = await this.chatService.sendMessage(+req.user.sub, sendMessageDto);
+    const data: SendMessageResponse = await this.chatService.sendMessage(+req.user.sub, sendMessageDto);
 
     this.socketGateway.emitNotification(data.recipientId, NotificationType.SEND_MESSAGE, {
       payload: data,
@@ -50,7 +51,10 @@ export class ChatController {
     @Headers('socketId') socketId: string,
     @Body() updateMessage: UpdateMessageDto,
   ) {
-    const updatedMessage = await this.chatService.updateMessage(+req.user.sub, updateMessage);
+    const updatedMessage: MessageToProfile = await this.chatService.updateMessage(
+      +req.user.sub,
+      updateMessage,
+    );
 
     this.socketGateway.emitNotification(updateMessage.recipientId, NotificationType.UPDATE_MESSAGE, {
       payload: updatedMessage,
@@ -74,19 +78,16 @@ export class ChatController {
     return message;
   }
 
-  @Delete('remove-chat/:recipientId')
-  async removeChat(
-    @Req() req,
-    @Headers('socketId') socketId: string,
-    @Param('recipientId') recipientId: string,
-  ) {
-    const data = await this.chatService.removeChat(+req.user.sub, +recipientId);
+  @Delete('remove-chat/:chatId')
+  async removeChat(@Req() req, @Headers('socketId') socketId: string, @Param('chatId') chatId: string) {
+    const data = await this.chatService.removeChat(+req.user.sub, +chatId);
 
-    this.socketGateway.emitNotification(+recipientId, NotificationType.REMOVE_CHAT, {
+    this.socketGateway.emitNotification(data.member.id, NotificationType.REMOVE_CHAT, {
       payload: data,
       socketId,
     });
-    return data;
+    
+    return { chatId: data.id };
   }
 
   @Get('get-chats')

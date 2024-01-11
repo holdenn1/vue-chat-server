@@ -13,16 +13,25 @@ export const mapMessageToProfile = (message: CreatedMessage): MessageToProfile =
   updatedDate: message.updatedDate,
 });
 
-export const mapChatsToProfile = (chats: Chat[]): ChatsToProfile[] => {
+export const mapChatsToProfile = (chats: Chat[], userId: number): ChatsToProfile[] => {
   return chats.map((chat) => ({
     id: chat.id,
-    member: mapToUserProfile(chat.members[0]),
+    member: mapToUserProfile(chat.members.find((user) => user.id !== userId)),
+    messages: chat.messages.map((item) => ({
+      ...item,
+      senderId: userId,
+      chatId: chat.id,
+    })),
+    lastReadMessageDate: chat.lastReadMessageDate,
+    createdDate: chat.createdDate,
+    updatedDate: chat.updatedDate,
   }));
 };
 
-export const mapChatToProfile = (chat: Chat): ChatToProfile => ({
+export const mapChatToProfile = (chat: Chat, senderId: number): ChatToProfile => ({
   id: chat.id,
-  members: chat.members,
+  member: chat.members?.length && mapToUserProfile(chat.members.find((user) => user.id !== senderId)),
+  lastReadMessageDate: chat.lastReadMessageDate,
   createdDate: chat.createdDate,
   updatedDate: chat.updatedDate,
 });
