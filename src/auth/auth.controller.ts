@@ -18,14 +18,14 @@ export class AuthController {
   sendCookie(res: Response, accessToken: string, refreshToken: string) {
     res.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: false,
+      secure: true,
       sameSite: 'none',
       expires: new Date(new Date().getTime() + 15 * 60 * 1000),
     });
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       sameSite: 'none',
-      secure: false,
+      secure: true,
       expires: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
     });
   }
