@@ -15,7 +15,7 @@ import { User } from 'src/user/entities/user.entity';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: process.env.DOMAIN,
   },
 })
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
