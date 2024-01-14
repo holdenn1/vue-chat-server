@@ -19,13 +19,11 @@ export class AuthController {
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: false,
-      sameSite: 'lax',
       expires: new Date(new Date().getTime() + 15 * 60 * 1000),
     });
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: false,
-      sameSite: 'lax',
       expires: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
     });
   }
@@ -67,13 +65,11 @@ export class AuthController {
 
     res.clearCookie('access_token', {
       httpOnly: true,
-      sameSite: 'lax',
       secure: false,
     });
 
     res.clearCookie('refresh_token', {
       httpOnly: true,
-      sameSite: 'lax',
       secure: false,
     });
 
