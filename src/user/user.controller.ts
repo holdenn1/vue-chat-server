@@ -40,8 +40,18 @@ export class UserController {
 
   @Post('update-user-avatar')
   @UseInterceptors(FileInterceptor('cover'))
-  uploadAvatar(@Req() req, @UploadedFile() file: Express.Multer.File) {
-    return this.userService.updateUserAvatar(file, +req.user.sub);
+  async uploadAvatar(
+    @Req() req,
+    @Headers('socketId') socketId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const user = await this.userService.updateUserAvatar(file, +req.user.sub);
+    this.socketGateway.emitToAll(NotificationType.UPDATE_USER, {
+      payload: user,
+      socketId,
+    });
+
+    return user;
   }
 
   @Put('update-user')

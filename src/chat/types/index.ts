@@ -39,7 +39,7 @@ export type ChatsToProfile = {
 
 export type ChatToProfile = {
   id: number;
-  member?: UserToProfile;
+  members?: UserToProfile[];
   lastReadMessageDate: Date;
   createdDate: Date;
   updatedDate: Date;
@@ -48,7 +48,7 @@ export type ChatToProfile = {
 export type SendMessageResponse = {
   chat: {
     id: number;
-    member?: UserToProfile;
+    members?: UserToProfile[];
     lastReadMessageDate: Date;
     createdDate: Date;
     updatedDate: Date;

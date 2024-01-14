@@ -38,7 +38,6 @@ export class AuthController {
   @UseGuards(GoogleGuard)
   async googleAuthRedirect(@Req() req, @Res({ passthrough: true }) res: Response) {
     const { user, accessToken, refreshToken } = await this.authService.googleAuth(req.user);
-
     this.sendCookie(res, accessToken, refreshToken);
     res.redirect(`${this.configService.get('CLIENT_URL')}/#/`);
   }

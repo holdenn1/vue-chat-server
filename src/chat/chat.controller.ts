@@ -82,11 +82,14 @@ export class ChatController {
   async removeChat(@Req() req, @Headers('socketId') socketId: string, @Param('chatId') chatId: string) {
     const data = await this.chatService.removeChat(+req.user.sub, +chatId);
 
-    this.socketGateway.emitNotification(data.member.id, NotificationType.REMOVE_CHAT, {
-      payload: data,
-      socketId,
-    });
-    
+    const recipient = data.members.find((user) => user.id !== +req.user.sub);
+    if (recipient) {
+      this.socketGateway.emitNotification(recipient.id, NotificationType.REMOVE_CHAT, {
+        payload: data,
+        socketId,
+      });
+    }
+
     return { chatId: data.id };
   }
 

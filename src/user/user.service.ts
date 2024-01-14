@@ -7,6 +7,7 @@ import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { storage } from 'src/firebase';
 import { mapToUserProfile, mapToUsersProfile } from './mappers';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Message } from 'src/chat/entities/message.entity';
 
 @Injectable()
 export class UserService {

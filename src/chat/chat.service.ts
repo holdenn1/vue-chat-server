@@ -38,7 +38,8 @@ export class ChatService {
 
   async findChatById(chatId: number) {
     const chat = await this.chatRepository.findOne({ where: { id: chatId } });
-    if (chat) {
+
+    if (!chat) {
       throw new BadRequestException('Chat does not exist');
     }
     return chat;
@@ -83,7 +84,7 @@ export class ChatService {
       const createdMessage = await this.messageRepository.save({ message, chat, sender });
 
       return {
-        chat: mapChatToProfile(chat, senderId),
+        chat: mapChatToProfile(chat),
         message: mapMessageToProfile(createdMessage),
         recipientId,
       };
@@ -137,7 +138,7 @@ export class ChatService {
     }
 
     await this.chatRepository.remove(chat);
-    return mapChatToProfile({ ...chat, id: chatId }, userId);
+    return mapChatToProfile({ ...chat, id: chatId });
   }
 
   async findChatsByUser(userId: number, page: number, pageSize: number) {
@@ -151,7 +152,11 @@ export class ChatService {
       .createQueryBuilder('chat')
       .innerJoinAndSelect('chat.members', 'user')
       .innerJoinAndSelect('chat.messages', 'message')
-      .where((qb) => {
+      .innerJoinAndSelect('message.sender', 'sender')
+      .where(`chat.id IN ( SELECT "chatId" FROM app_user_chats_chat WHERE "appUserId" = :userId )`, {
+        userId,
+      })
+      .andWhere((qb) => {
         const subQuery = qb
           .subQuery()
           .select('MAX(subMessage.id)')
@@ -169,9 +174,10 @@ export class ChatService {
   }
 
   async getMessages(userId: number, chatId: number, page: number, pageSize: number) {
+    const lastReadMessageDate = new Date();
     if (page === 1) {
       const chat = await this.findChatById(chatId);
-      chat.lastReadMessageDate = new Date();
+      chat.lastReadMessageDate = lastReadMessageDate;
       await this.chatRepository.save(chat);
     }
     const skip = (page - 1) * pageSize;
@@ -196,6 +202,6 @@ export class ChatService {
       skip,
     });
 
-    return mapMessagesToProfile(messages);
+    return { messages: mapMessagesToProfile(messages), lastReadMessageDate, chatId };
   }
 }
