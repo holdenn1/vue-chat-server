@@ -68,13 +68,13 @@ export class AuthController {
     res.clearCookie('access_token', {
       httpOnly: true,
       sameSite: 'none',
-      secure: false,
+      secure: true,
     });
 
     res.clearCookie('refresh_token', {
       httpOnly: true,
       sameSite: 'none',
-      secure: false,
+      secure: true,
     });
 
     return { refreshToken: data.refreshToken };
