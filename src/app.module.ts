@@ -23,6 +23,7 @@ import { SocketModule } from './socket/socket.module';
         timezone: "Europe/Kiev",
         autoLoadEntities: true,
         synchronize: true,
+        poolSize: 2
       }),
       inject: [ConfigService],
     }),

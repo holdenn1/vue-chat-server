@@ -37,6 +37,7 @@ export class ChatController {
     @Headers('socketId') socketId: string,
   ) {
     const data: SendMessageResponse = await this.chatService.sendMessage(+req.user.sub, sendMessageDto);
+    console.log(data);
 
     this.socketGateway.emitNotification(data.recipientId, NotificationType.SEND_MESSAGE, {
       payload: data,

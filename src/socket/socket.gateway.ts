@@ -17,6 +17,7 @@ import { User } from 'src/user/entities/user.entity';
   cors: {
     origin: process.env.DOMAIN,
   },
+  
 })
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private jwtService: JwtService) {}
